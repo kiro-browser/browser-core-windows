@@ -14,8 +14,12 @@ using Microsoft.Web.WebView2.Wpf;
 
 namespace FluxBrowser;
 
+// Interaction logic for MainWindow.xaml
 public partial class MainWindow : Window
 {
+    // We set the DuckDuckGoURL as the defaullt homepage,
+    // since WebView2 doesn't allow navigating to local files 
+    // without extra configuration.
     private static readonly string DuckDuckGoUrl = "https://duckduckgo.com";
     private static readonly string DownloadsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
