@@ -326,13 +326,16 @@ public partial class MainWindow : Window
 
     private void CloseTab(BrowserTab tab)
     {
+        // If only one tab left, close the window.
         if (_tabs.Count <= 1) { Close(); return; }
 
-        var idx = _tabs.IndexOf(tab);
-        tab.WebView?.Dispose();
-        if (tab.Button != null) TabPanel.Children.Remove(tab.Button);
-        _tabs.Remove(tab);
+        var idx = _tabs.IndexOf(tab);   // Get index before removing
+        tab.WebView?.Dispose();         // Dispose WebView to release resources and file locks
+        if (tab.Button != null) TabPanel.Children.Remove(tab.Button);   // Remove tab button from UI
+        _tabs.Remove(tab);  // Remove from list
 
+        // If the closed tab is the current one,
+        // switch to the nearest tab.
         if (_currentTab == tab)
             SelectTab(_tabs[Math.Min(idx, _tabs.Count - 1)]);
     }
