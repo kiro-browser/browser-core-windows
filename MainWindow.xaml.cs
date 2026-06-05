@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shell;
 using FluxBrowser.Models;
 using FluxBrowser.Services;
 using Microsoft.Web.WebView2.Core;
@@ -16,7 +17,6 @@ namespace FluxBrowser;
 public partial class MainWindow : Window
 {
     private static readonly string DuckDuckGoUrl = "https://duckduckgo.com";
-    private static readonly string HomeUrl = DuckDuckGoUrl;
     private static readonly string DownloadsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 
@@ -36,14 +36,54 @@ public partial class MainWindow : Window
     private HashSet<string> _bookmarkedUrls = [];
     private List<HistoryEntry> _history = [];
     private string _lastFindText = "";
+    private Services.SettingsManager? _settingsManager;
+    private readonly List<DownloadInfo> _downloads = [];
+
+    private string CurrentHomePage => _settingsManager?.Settings.HomePage ?? DuckDuckGoUrl;
+
+    private class DownloadInfo
+    {
+        public string? Id;
+        public CoreWebView2DownloadOperation? Operation;
+        public Border? Border;
+        public ProgressBar? ProgressBar;
+        public Button? ActionBtn;
+        public TextBlock? NameText;
+        public TextBlock? StatusText;
+    }
 
     public MainWindow()
     {
         InitializeComponent();
+        _settingsManager = new Services.SettingsManager(_profiles.Current.DataDir);
         LoadProfileBookmarks();
         LoadHistory();
         InitProfileSelector();
-        AddNewTab(HomeUrl, true);
+        InitializeStartup();
+    }
+
+    private void InitializeStartup()
+    {
+        var behavior = _settingsManager?.Settings.StartupBehavior ?? "home";
+        switch (behavior)
+        {
+            case "restore":
+                if (_history.Count > 0)
+                {
+                    var urls = _history.Take(10).Select(h => h.Url).ToList();
+                    AddNewTab(urls[0], true);
+                    for (int i = 1; i < urls.Count; i++)
+                        AddNewTab(urls[i], false);
+                    return;
+                }
+                goto default;
+            case "newtab":
+                AddNewTab("about:blank", true);
+                return;
+            default:
+                AddNewTab(CurrentHomePage, true);
+                return;
+        }
     }
 
     // ═════════════════════════════════════════════════════
@@ -67,7 +107,8 @@ public partial class MainWindow : Window
         SaveProfileBookmarks();
         SaveHistory();
         _profiles.SwitchTo(profile.Id);
-        RebuildTabs(HomeUrl);
+        _settingsManager = new Services.SettingsManager(_profiles.Current.DataDir);
+        RebuildTabs(CurrentHomePage);
         LoadProfileBookmarks();
         LoadHistory();
         UpdateBookmarkStar("");
@@ -108,7 +149,7 @@ public partial class MainWindow : Window
         ProfileSelector.ItemsSource = null;
         ProfileSelector.ItemsSource = _profiles.Profiles;
         ProfileSelector.SelectedItem = _profiles.Current;
-        RebuildTabs(HomeUrl);
+        RebuildTabs(CurrentHomePage);
         LoadProfileBookmarks();
     }
 
@@ -119,7 +160,7 @@ public partial class MainWindow : Window
     private async void AddNewTab(string? url = null, bool select = true)
     {
         _tabCounter++;
-        var tab = new BrowserTab { Id = _tabCounter, PendingUrl = url ?? HomeUrl };
+        var tab = new BrowserTab { Id = _tabCounter, PendingUrl = url ?? CurrentHomePage };
 
         var tabBtn = CreateTabButton(tab);
         var webView = new WebView2 { Visibility = Visibility.Collapsed };
@@ -155,12 +196,7 @@ public partial class MainWindow : Window
             webView.CoreWebView2.NewWindowRequested += (s, e) =>
             { e.Handled = true; AddNewTab(e.Uri, true); };
 
-            webView.CoreWebView2.DownloadStarting += (s, e) =>
-            {
-                var fileName = Path.GetFileName(new Uri(e.DownloadOperation.Uri).AbsolutePath);
-                if (string.IsNullOrEmpty(fileName)) fileName = "download_" + DateTime.Now.Ticks;
-                e.ResultFilePath = GetUniqueFilePath(Path.Combine(DownloadsPath, fileName));
-            };
+            webView.CoreWebView2.DownloadStarting += (s, e) => OnDownloadStarting(e);
 
             webView.CoreWebView2.ContextMenuRequested += (s, e) =>
             {
@@ -179,7 +215,7 @@ public partial class MainWindow : Window
         }
 
         if (select) SelectTab(tab);
-        NavigateTo(tab, tab.PendingUrl ?? HomeUrl);
+        NavigateTo(tab, tab.PendingUrl ?? CurrentHomePage);
     }
 
     private Button CreateTabButton(BrowserTab tab)
@@ -285,17 +321,18 @@ public partial class MainWindow : Window
         return false;
     }
 
-    private static string NormalizeUrl(string input)
+    private string NormalizeUrl(string input)
     {
         input = input.Trim();
-        if (string.IsNullOrWhiteSpace(input)) return HomeUrl;
-        if (input.StartsWith("about:")) return HomeUrl;
+        if (string.IsNullOrWhiteSpace(input)) return CurrentHomePage;
+        if (input.StartsWith("about:")) return CurrentHomePage;
         if (IsUrl(input))
         {
             if (!input.StartsWith("http://") && !input.StartsWith("https://")) return "https://" + input;
             return input;
         }
-        return $"https://duckduckgo.com/?q={Uri.EscapeDataString(input)}";
+        return _settingsManager?.Settings.GetSearchUrl(input) ??
+               $"https://duckduckgo.com/?q={Uri.EscapeDataString(input)}";
     }
 
     private void NavigateTo(BrowserTab tab, string url)
@@ -367,7 +404,8 @@ public partial class MainWindow : Window
             }
 
             // Add to history
-            if (!url.StartsWith("about:") && !url.Contains("duckduckgo.com/?q="))
+            var skipSearch = _settingsManager?.Settings.IsSearchUrl(url) ?? url.Contains("duckduckgo.com/?q=");
+            if (!url.StartsWith("about:") && !skipSearch)
             {
                 _history.RemoveAll(h => h.Url == url);
                 _history.Insert(0, new HistoryEntry { Url = url, Title = title, VisitedAt = DateTime.Now });
@@ -457,6 +495,220 @@ public partial class MainWindow : Window
     {
         if (_currentTab?.WebView == null) return;
         ZoomText.Text = $"{(int)(_currentTab.WebView.ZoomFactor * 100)}%";
+    }
+
+    // ═════════════════════════════════════════════════════
+    //  Downloads Manager
+    // ═════════════════════════════════════════════════════
+
+    private void OnDownloadStarting(CoreWebView2DownloadStartingEventArgs e)
+    {
+        var op = e.DownloadOperation;
+        var fileName = Path.GetFileName(new Uri(op.Uri).AbsolutePath);
+        if (string.IsNullOrEmpty(fileName)) fileName = "download_" + DateTime.Now.Ticks;
+        e.ResultFilePath = GetUniqueFilePath(Path.Combine(DownloadsPath, fileName));
+
+        if (_settingsManager?.Settings.PromptBeforeDownload == true)
+        {
+            var proceed = false;
+            Dispatcher.Invoke(() =>
+            {
+                proceed = MessageBox.Show(
+                    $"Do you want to download this file?\n\n{fileName}",
+                    "Download", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+            });
+            if (!proceed) { e.Cancel = true; return; }
+        }
+
+        var info = new DownloadInfo
+        {
+            Id = Guid.NewGuid().ToString("N")[..8],
+            Operation = op,
+        };
+        _downloads.Add(info);
+        Dispatcher.Invoke(() => AddDownloadUI(info));
+
+        op.StateChanged += (_, _) => Dispatcher.Invoke(() => UpdateDownloadState(info));
+        op.BytesReceivedChanged += (_, _) => Dispatcher.Invoke(() => UpdateDownloadProgress(info));
+    }
+
+    private void AddDownloadUI(DownloadInfo info)
+    {
+        DownloadsBar.Visibility = Visibility.Visible;
+
+        var border = new Border
+        {
+            Background = (Brush)FindResource("BgElevatedBrush"),
+            CornerRadius = new CornerRadius(6),
+            Margin = new Thickness(0, 2, 0, 2),
+            Padding = new Thickness(10, 6, 10, 6)
+        };
+
+        var grid = new Grid();
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var nameText = new TextBlock
+        {
+            Text = Path.GetFileName(info.Operation?.ResultFilePath ?? "file"),
+            FontSize = 12,
+            Foreground = (Brush)FindResource("TextPrimaryBrush"),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        grid.Children.Add(nameText);
+
+        var statusText = new TextBlock
+        {
+            Text = "Starting...",
+            FontSize = 10,
+            Foreground = (Brush)FindResource("TextMutedBrush"),
+            Margin = new Thickness(0, 2, 0, 0)
+        };
+        Grid.SetRow(statusText, 1);
+        grid.Children.Add(statusText);
+
+        var actionBtn = new Button
+        {
+            Content = "Cancel",
+            Style = (Style)FindResource("ToolbarButton"),
+            Width = 60, Height = 24, FontSize = 10,
+            Tag = info.Id
+        };
+        actionBtn.Click += (_, _) => CancelDownload(info.Id!);
+        Grid.SetColumn(actionBtn, 1);
+        Grid.SetRowSpan(actionBtn, 2);
+        grid.Children.Add(actionBtn);
+
+        var progressBar = new ProgressBar
+        {
+            Style = (Style)FindResource("ModernProgressBar"),
+            Height = 3,
+            Minimum = 0,
+            Maximum = 100,
+            Value = 0,
+            Margin = new Thickness(0, 6, 0, 0)
+        };
+        Grid.SetRow(progressBar, 1);
+        grid.Children.Add(progressBar);
+
+        border.Child = grid;
+        DownloadsPanel.Children.Insert(0, border);
+
+        info.Border = border;
+        info.ProgressBar = progressBar;
+        info.ActionBtn = actionBtn;
+        info.NameText = nameText;
+        info.StatusText = statusText;
+
+        UpdateDownloadProgress(info);
+        UpdateDownloadState(info);
+    }
+
+    private void UpdateDownloadProgress(DownloadInfo info)
+    {
+        if (info.Operation == null || info.ProgressBar == null || info.StatusText == null) return;
+        var received = info.Operation.BytesReceived;
+        var total = (long)info.Operation.TotalBytesToReceive;
+        info.ProgressBar.Value = total > 0 ? (double)received / total * 100 : 0;
+        info.StatusText.Text = total > 0
+            ? $"{FormatSize(received)} / {FormatSize(total)}"
+            : $"{FormatSize(received)}";
+    }
+
+    private void UpdateDownloadState(DownloadInfo info)
+    {
+        if (info.Operation == null || info.ActionBtn == null) return;
+        var state = info.Operation.State;
+        switch (state)
+        {
+            case CoreWebView2DownloadState.Completed:
+                info.ActionBtn.Content = "Open";
+                info.ActionBtn.Click -= (_, _) => CancelDownload(info.Id!);
+                info.ActionBtn.Click += (_, _) => OpenDownloadFile(info.Operation.ResultFilePath);
+                if (info.StatusText != null)
+                    info.StatusText.Text = "Completed · " + FormatSize(info.Operation.BytesReceived);
+                break;
+            case CoreWebView2DownloadState.Interrupted:
+                info.ActionBtn.Content = "Retry";
+                info.ActionBtn.Click -= (_, _) => CancelDownload(info.Id!);
+                info.ActionBtn.Click += (_, _) => RetryDownload(info);
+                if (info.StatusText != null)
+                    info.StatusText.Text = "Failed";
+                break;
+        }
+        ClearDownloadsBtn.Visibility = _downloads.Any(d =>
+        {
+            try { return d.Operation?.State == CoreWebView2DownloadState.Completed; }
+            catch { return false; }
+        }) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void CancelDownload(string id)
+    {
+        var info = _downloads.Find(d => d.Id == id);
+        try { info?.Operation?.Cancel(); } catch { }
+    }
+
+    private void OpenDownloadFile(string path)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true }); }
+        catch { }
+    }
+
+    private void ShowDownloadInFolder(string path)
+    {
+        try { System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{path}\""); }
+        catch { }
+    }
+
+    private void RetryDownload(DownloadInfo info)
+    {
+        // Re-create the download UI and re-trigger
+        if (info.NameText != null && info.Operation != null)
+        {
+            var url = info.Operation.Uri;
+            if (info.Border != null) DownloadsPanel.Children.Remove(info.Border);
+            _downloads.Remove(info);
+            // Navigate to the URL again to trigger download
+            if (_currentTab?.WebView?.CoreWebView2 != null)
+                _currentTab.WebView.CoreWebView2.Navigate(url);
+        }
+    }
+
+    private void ClearDownloads_Click(object sender, RoutedEventArgs e)
+    {
+        var completed = _downloads.Where(d =>
+        {
+            try { return d.Operation?.State == CoreWebView2DownloadState.Completed; }
+            catch { return false; }
+        }).ToList();
+        foreach (var d in completed)
+        {
+            if (d.Border != null) DownloadsPanel.Children.Remove(d.Border);
+            _downloads.Remove(d);
+        }
+        if (_downloads.Count == 0 && DownloadsBar.Visibility == Visibility.Visible)
+            CloseDownloadsBar();
+        ClearDownloadsBtn.Visibility = Visibility.Collapsed;
+    }
+
+    private void CloseDownloads_Click(object sender, RoutedEventArgs e) => CloseDownloadsBar();
+
+    private void CloseDownloadsBar()
+    {
+        DownloadsBar.Visibility = Visibility.Collapsed;
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
+        return $"{bytes / (1024.0 * 1024 * 1024):F1} GB";
     }
 
     // ═════════════════════════════════════════════════════
@@ -602,7 +854,7 @@ public partial class MainWindow : Window
 
     private void UpdateBookmarkStar(string url)
     {
-        if (string.IsNullOrEmpty(url) || url == HomeUrl || url == "about:blank")
+        if (string.IsNullOrEmpty(url) || url == CurrentHomePage || url == "about:blank")
         { BookmarkIcon.Text = "\u2606"; BookmarkBtn.Foreground = (Brush)FindResource("TextSecondaryBrush"); return; }
         BookmarkIcon.Text = _bookmarkedUrls.Contains(url) ? "\u2605" : "\u2606";
         BookmarkBtn.Foreground = _bookmarkedUrls.Contains(url)
@@ -637,7 +889,7 @@ public partial class MainWindow : Window
     private void ToggleBookmark()
     {
         var url = _currentTab?.CurrentUrl;
-        if (string.IsNullOrEmpty(url) || url == HomeUrl || url == "about:blank") return;
+        if (string.IsNullOrEmpty(url) || url == CurrentHomePage || url == "about:blank") return;
         if (_bookmarkedUrls.Contains(url)) _bookmarkedUrls.Remove(url);
         else _bookmarkedUrls.Add(url);
         SaveProfileBookmarks();
@@ -733,6 +985,10 @@ public partial class MainWindow : Window
         history.Click += (_, _) => ShowHistoryManager();
         menu.Items.Add(history);
 
+        var settings = new MenuItem { Header = "Settings" };
+        settings.Click += (_, _) => ShowSettings();
+        menu.Items.Add(settings);
+
         menu.Items.Add(new Separator());
 
         var zoomIn = new MenuItem { Header = "Zoom In  (Ctrl++)" };
@@ -780,6 +1036,18 @@ public partial class MainWindow : Window
             "<p style='color:#585878;'>Profile: " + _profiles.Current.Name + "</p></div></body></html>");
     }
 
+    private void ShowSettings()
+    {
+        if (_settingsManager == null) return;
+        var dialog = new SettingsWindow(_settingsManager);
+        dialog.Owner = this;
+        if (dialog.ShowDialog() == true)
+        {
+            _settingsManager.Save();
+            StatusText.Text = "Settings saved";
+        }
+    }
+
     // ═════════════════════════════════════════════════════
     //  Utility
     // ═════════════════════════════════════════════════════
@@ -802,7 +1070,7 @@ public partial class MainWindow : Window
     //  Event Handlers
     // ═════════════════════════════════════════════════════
 
-    private void AddTab_Click(object sender, RoutedEventArgs e) => AddNewTab(HomeUrl, true);
+    private void AddTab_Click(object sender, RoutedEventArgs e) => AddNewTab(CurrentHomePage, true);
     private void BackBtn_Click(object sender, RoutedEventArgs e) { try { _currentTab?.WebView?.GoBack(); } catch { } }
     private void ForwardBtn_Click(object sender, RoutedEventArgs e) { try { _currentTab?.WebView?.GoForward(); } catch { } }
 
@@ -817,7 +1085,7 @@ public partial class MainWindow : Window
         catch { }
     }
 
-    private void HomeBtn_Click(object sender, RoutedEventArgs e) => NavigateCurrent(HomeUrl);
+    private void HomeBtn_Click(object sender, RoutedEventArgs e) => NavigateCurrent(CurrentHomePage);
     private void BookmarkBtn_Click(object sender, RoutedEventArgs e) => ToggleBookmark();
     private void MenuBtn_Click(object sender, RoutedEventArgs e) => ShowMenu();
 
@@ -880,12 +1148,12 @@ public partial class MainWindow : Window
         {
             switch (e.Key)
             {
-                case Key.T: AddNewTab(HomeUrl, true); e.Handled = true; break;
+                case Key.T: AddNewTab(CurrentHomePage, true); e.Handled = true; break;
                 case Key.W: if (_currentTab != null) CloseTab(_currentTab); e.Handled = true; break;
                 case Key.L: case Key.D: UrlBox.Focus(); e.Handled = true; break;
                 case Key.R: RefreshBtn_Click(this, new RoutedEventArgs()); e.Handled = true; break;
                 case Key.F: FindInPage(); e.Handled = true; break;
-                case Key.N: AddNewTab(HomeUrl, true); e.Handled = true; break;
+                case Key.N: AddNewTab(CurrentHomePage, true); e.Handled = true; break;
                 case Key.OemPlus: case Key.Add: ZoomIn(); e.Handled = true; break;
                 case Key.OemMinus: case Key.Subtract: ZoomOut(); e.Handled = true; break;
                 case Key.D0: case Key.NumPad0: ZoomReset(); e.Handled = true; break;
@@ -958,7 +1226,8 @@ public class ProfileDialog : Window
             CaretBrush = new SolidColorBrush(Color.FromRgb(99, 102, 241)) };
         Grid.SetRow(_nameBox, 1); grid.Children.Add(_nameBox);
 
-        grid.Children.Add(new TextBlock { Text = "Icon:", Margin = new Thickness(0, 0, 0, 4), FontSize = 13, Grid.Row = 2 });
+        var iconLabel = new TextBlock { Text = "Icon:", Margin = new Thickness(0, 0, 0, 4), FontSize = 13 };
+        Grid.SetRow(iconLabel, 2); grid.Children.Add(iconLabel);
 
         _iconList = new ListBox { ItemsSource = Icons, Margin = new Thickness(0, 0, 0, 12), Height = 38,
             Background = new SolidColorBrush(Color.FromRgb(28, 28, 54)), BorderThickness = new Thickness(0), SelectedIndex = 0 };
@@ -1016,4 +1285,153 @@ public class HistoryEntry
     public string Url { get; set; } = "";
     public string Title { get; set; } = "";
     public DateTime VisitedAt { get; set; }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  Settings Window
+// ═══════════════════════════════════════════════════════════
+
+public class SettingsWindow : Window
+{
+    private readonly Services.SettingsManager _manager;
+    private readonly ComboBox _searchCombo;
+    private readonly TextBox _homePageBox;
+    private readonly ComboBox _startupCombo;
+    private readonly CheckBox _promptCheck;
+    private readonly CheckBox _darkCheck;
+
+    public SettingsWindow(Services.SettingsManager manager)
+    {
+        _manager = manager;
+        var s = manager.Settings;
+
+        Title = "Settings - Flux Browser";
+        Width = 460; Height = 420;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        WindowStyle = WindowStyle.ToolWindow; ResizeMode = ResizeMode.NoResize;
+        Background = new SolidColorBrush(Color.FromRgb(20, 20, 40));
+        Foreground = new SolidColorBrush(Color.FromRgb(241, 241, 246));
+
+        var root = new StackPanel { Margin = new Thickness(24) };
+
+        // Header
+        root.Children.Add(new TextBlock
+        {
+            Text = "Settings", FontSize = 18, FontWeight = FontWeights.SemiBold,
+            Foreground = new SolidColorBrush(Color.FromRgb(99, 102, 241)),
+            Margin = new Thickness(0, 0, 0, 20)
+        });
+
+        // Search Engine
+        root.Children.Add(MakeLabel("Default Search Engine"));
+        _searchCombo = MakeCombo(BrowserSettings.SearchEngineNames, s.DefaultSearchEngine);
+        root.Children.Add(_searchCombo);
+
+        // Home Page
+        root.Children.Add(MakeLabel("Home Page"));
+        _homePageBox = new TextBox
+        {
+            Text = s.HomePage, FontSize = 13, Height = 32,
+            Background = new SolidColorBrush(Color.FromRgb(28, 28, 54)),
+            Foreground = new SolidColorBrush(Color.FromRgb(241, 241, 246)),
+            BorderThickness = new Thickness(0), Padding = new Thickness(10, 0, 10, 0),
+            CaretBrush = new SolidColorBrush(Color.FromRgb(99, 102, 241)),
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        root.Children.Add(_homePageBox);
+
+        // Startup
+        root.Children.Add(MakeLabel("On startup"));
+        _startupCombo = MakeCombo(BrowserSettings.StartupBehaviorNames, s.StartupBehavior);
+        root.Children.Add(_startupCombo);
+
+        // Prompt before download
+        _promptCheck = new CheckBox
+        {
+            Content = " Ask before downloading files", FontSize = 13,
+            IsChecked = s.PromptBeforeDownload,
+            Foreground = new SolidColorBrush(Color.FromRgb(241, 241, 246)),
+            Margin = new Thickness(0, 12, 0, 4)
+        };
+        root.Children.Add(_promptCheck);
+
+        // Dark mode
+        _darkCheck = new CheckBox
+        {
+            Content = " Dark mode", FontSize = 13,
+            IsChecked = s.DarkMode,
+            Foreground = new SolidColorBrush(Color.FromRgb(241, 241, 246)),
+            Margin = new Thickness(0, 4, 0, 16)
+        };
+        root.Children.Add(_darkCheck);
+
+        // Buttons
+        var btnPanel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
+
+        var saveBtn = new Button
+        {
+            Content = "Save", Width = 80, Height = 32, Margin = new Thickness(0, 0, 8, 0),
+            Cursor = Cursors.Hand,
+            Background = new SolidColorBrush(Color.FromRgb(99, 102, 241)),
+            Foreground = Brushes.White, BorderThickness = new Thickness(0)
+        };
+        saveBtn.Click += Save_Click;
+        btnPanel.Children.Add(saveBtn);
+
+        var cancelBtn = new Button
+        {
+            Content = "Cancel", Width = 80, Height = 32, Cursor = Cursors.Hand,
+            Background = new SolidColorBrush(Color.FromRgb(60, 60, 80)),
+            Foreground = new SolidColorBrush(Color.FromRgb(241, 241, 246)),
+            BorderThickness = new Thickness(0)
+        };
+        cancelBtn.Click += (_, _) => { DialogResult = false; Close(); };
+        btnPanel.Children.Add(cancelBtn);
+
+        root.Children.Add(btnPanel);
+        Content = new ScrollViewer { Content = root };
+    }
+
+    private void Save_Click(object sender, RoutedEventArgs e)
+    {
+        var s = _manager.Settings;
+        s.DefaultSearchEngine = ((KeyValuePair<string, string>)_searchCombo.SelectedItem).Key;
+        s.HomePage = _homePageBox.Text.Trim();
+        if (string.IsNullOrEmpty(s.HomePage)) s.HomePage = "https://duckduckgo.com";
+        s.StartupBehavior = ((KeyValuePair<string, string>)_startupCombo.SelectedItem).Key;
+        s.PromptBeforeDownload = _promptCheck.IsChecked == true;
+        s.DarkMode = _darkCheck.IsChecked == true;
+        _manager.Save();
+        DialogResult = true;
+        Close();
+    }
+
+    private static TextBlock MakeLabel(string text) => new()
+    {
+        Text = text, FontSize = 12,
+        Foreground = new SolidColorBrush(Color.FromRgb(152, 152, 184)),
+        Margin = new Thickness(0, 10, 0, 4)
+    };
+
+    private static ComboBox MakeCombo(Dictionary<string, string> items, string selectedKey)
+    {
+        var combo = new ComboBox
+        {
+            ItemsSource = items.ToList(),
+            DisplayMemberPath = "Value",
+            SelectedValuePath = "Key",
+            SelectedValue = selectedKey,
+            Height = 32, FontSize = 13,
+            Background = new SolidColorBrush(Color.FromRgb(28, 28, 54)),
+            Foreground = new SolidColorBrush(Color.FromRgb(241, 241, 246)),
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(8, 4, 8, 4),
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        return combo;
+    }
 }

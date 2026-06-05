@@ -24,6 +24,7 @@
                 <RowDefinition Height="42"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="24"/>
             </Grid.RowDefinitions>
 
@@ -227,9 +228,53 @@
             </Grid>
 
             <!-- ════════════════════════════════════════════
+                 Downloads Bar
+                 ════════════════════════════════════════════ -->
+            <Border x:Name="DownloadsBar" Grid.Row="4" Background="{StaticResource BgSurfaceBrush}"
+                    BorderThickness="0,1,0,0" BorderBrush="{StaticResource BorderSubtleBrush}"
+                    Visibility="Collapsed" MaxHeight="150">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="28"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="8,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Downloads" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <Button x:Name="ClearDownloadsBtn" Grid.Column="1"
+                                Style="{StaticResource ToolbarButton}"
+                                Width="Auto" Height="22" Padding="6,0"
+                                FontSize="10" Click="ClearDownloads_Click"
+                                ToolTip="Clear completed downloads"
+                                Foreground="{StaticResource TextMutedBrush}">Clear</Button>
+                        <Button x:Name="CloseDownloadsBtn" Grid.Column="2"
+                                Style="{StaticResource ToolbarButton}"
+                                Width="22" Height="22" Click="CloseDownloads_Click"
+                                ToolTip="Close downloads bar">
+                            <Path Data="M3,3 L9,9 M9,3 L3,9"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.5" StrokeEndLineCap="Flat"
+                                  Width="12" Height="12" Stretch="None"/>
+                        </Button>
+                    </Grid>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                  Style="{StaticResource ModernScrollViewer}"
+                                  Margin="4,0,4,4">
+                        <StackPanel x:Name="DownloadsPanel"/>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- ════════════════════════════════════════════
                  Find in Page Bar
                  ════════════════════════════════════════════ -->
-            <Border x:Name="FindBar" Grid.Row="4" Background="{StaticResource BgSurfaceBrush}"
+            <Border x:Name="FindBar" Grid.Row="5" Background="{StaticResource BgSurfaceBrush}"
                     BorderThickness="0,1,0,0" BorderBrush="{StaticResource BorderSubtleBrush}"
                     Height="36" Visibility="Collapsed">
                 <Grid Margin="8,0">
@@ -279,7 +324,7 @@
             <!-- ════════════════════════════════════════════
                  Status Bar - minimal
                  ════════════════════════════════════════════ -->
-            <Border Grid.Row="5" Background="{StaticResource BgSurfaceBrush}"
+            <Border Grid.Row="6" Background="{StaticResource BgSurfaceBrush}"
                     BorderThickness="0,1,0,0" BorderBrush="{StaticResource BorderSubtleBrush}">
                 <Grid Margin="8,0">
                     <Grid.ColumnDefinitions>
