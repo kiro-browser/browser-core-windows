@@ -197,6 +197,8 @@ public partial class MainWindow : Window
             webView.NavigationCompleted += (s, e) => OnNavigationCompleted(tab, e);
             webView.CoreWebView2.SourceChanged += (s, e) => OnSourceChanged(tab);
             webView.CoreWebView2.HistoryChanged += (s, e) => OnHistoryChanged(tab);
+            webView.CoreWebView2.FaviconChanged += (_, _) =>
+                Dispatcher.Invoke(() => UpdateTabFavicon(tab));
         }
         catch
         {
@@ -217,12 +219,21 @@ public partial class MainWindow : Window
         };
 
         var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
+        var favicon = new System.Windows.Controls.Image
+        {
+            Width = 14, Height = 14,
+            Margin = new Thickness(0, 0, 6, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Visibility = Visibility.Collapsed
+        };
+
         var title = new TextBlock
         {
-            Text = "New Tab", FontSize = 12,
+            Text = "New Tab", FontSize = 11,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
             Foreground = (Brush)FindResource("TextSecondaryBrush")
@@ -230,21 +241,29 @@ public partial class MainWindow : Window
 
         var closeBtn = new Button
         {
-            Content = "\u2715", FontSize = 10, Width = 20, Height = 20,
+            Content = "\u2715", FontSize = 8, Width = 18, Height = 18,
             Background = Brushes.Transparent, BorderThickness = new Thickness(0),
             Foreground = (Brush)FindResource("TextMutedBrush"),
             Cursor = Cursors.Hand, VerticalAlignment = VerticalAlignment.Center,
-            ToolTip = "Close tab"
+            ToolTip = "Close tab", Opacity = 0
         };
         closeBtn.Click += (_, _) => CloseTab(tab);
 
+        // Show close button on hover
+        btn.MouseEnter += (_, _) => closeBtn.Opacity = 1;
+        btn.MouseLeave += (_, _) => closeBtn.Opacity = 0;
+
+        Grid.SetColumn(favicon, 0);
+        grid.Children.Add(favicon);
+
         var stack = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        stack.Children.Add(new TextBlock { Text = _profiles.Current.Icon, FontSize = 12, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center });
         stack.Children.Add(title);
-        Grid.SetColumn(stack, 0);
+        Grid.SetColumn(stack, 1);
         grid.Children.Add(stack);
-        Grid.SetColumn(closeBtn, 1);
+
+        Grid.SetColumn(closeBtn, 2);
         grid.Children.Add(closeBtn);
+
         btn.Content = grid;
 
         btn.Click += (_, _) => SelectTab(tab);
@@ -252,7 +271,29 @@ public partial class MainWindow : Window
         { if (e.ChangedButton == MouseButton.Middle) { e.Handled = true; CloseTab(tab); } };
 
         tab.TitleControl = title;
+        tab.FaviconImage = favicon;
+        tab.CloseButton = closeBtn;
         return btn;
+    }
+
+    private async void UpdateTabFavicon(BrowserTab tab)
+    {
+        try
+        {
+            if (tab.WebView?.CoreWebView2 == null || tab.FaviconImage == null) return;
+            using var stream = await tab.WebView.CoreWebView2.GetFaviconAsync(
+                Microsoft.Web.WebView2.Core.CoreWebView2FaviconImageFormat.Png);
+            if (stream == null || stream.Length == 0) return;
+            var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+            bitmap.BeginInit();
+            bitmap.StreamSource = stream;
+            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            tab.FaviconImage.Source = bitmap;
+            tab.FaviconImage.Visibility = Visibility.Visible;
+        }
+        catch { }
     }
 
     private void SelectTab(BrowserTab tab)
@@ -619,7 +660,7 @@ public partial class MainWindow : Window
                 info.ActionBtn.Click -= (_, _) => CancelDownload(info.Id!);
                 info.ActionBtn.Click += (_, _) => OpenDownloadFile(info.Operation.ResultFilePath);
                 if (info.StatusText != null)
-                    info.StatusText.Text = "Completed · " + FormatSize(info.Operation.BytesReceived);
+                    info.StatusText.Text = "Completed ï¿½ " + FormatSize(info.Operation.BytesReceived);
                 break;
             case CoreWebView2DownloadState.Interrupted:
                 info.ActionBtn.Content = "Retry";

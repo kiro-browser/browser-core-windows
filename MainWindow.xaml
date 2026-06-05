@@ -1,7 +1,7 @@
 ﻿<Window x:Class="FluxBrowser.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="BuildBrowser"
+        Title="FluxBrowser"
         Width="1280" Height="800"
         MinWidth="800" MinHeight="500"
         WindowStyle="None"
@@ -19,17 +19,17 @@
     <Border x:Name="WindowBorder" Background="{StaticResource BgBaseBrush}" BorderThickness="0">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="30"/>
-                <RowDefinition Height="36"/>
-                <RowDefinition Height="42"/>
+                <RowDefinition Height="28"/>
+                <RowDefinition Height="34"/>
+                <RowDefinition Height="38"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="24"/>
+                <RowDefinition Height="20"/>
             </Grid.RowDefinitions>
 
             <!-- ════════════════════════════════════════════
-                 Title Bar - clean, minimal
+                 Unified Title Bar - compact, integrated
                  ════════════════════════════════════════════ -->
             <Grid x:Name="TitleBar" Background="{StaticResource BgSurfaceBrush}" Grid.Row="0"
                   MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
@@ -40,25 +40,23 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Grid Grid.Column="0" Width="64" Margin="10,0,0,0">
-                    <TextBlock Text="Flux" FontSize="11" FontWeight="SemiBold"
-                               VerticalAlignment="Center" Foreground="{StaticResource AccentSoftBrush}"
-                               />
-                </Grid>
+                <TextBlock Grid.Column="0" Text="Flux" FontSize="10" FontWeight="SemiBold"
+                           VerticalAlignment="Center" Foreground="{StaticResource AccentSoftBrush}"
+                           Margin="12,0,6,0"/>
 
-                <Border Grid.Column="1" CornerRadius="6" Background="{StaticResource BgElevatedBrush}"
-                        Height="22" VerticalAlignment="Center" Padding="6,0" Margin="0,0,8,0">
+                <Border Grid.Column="1" CornerRadius="5" Background="{StaticResource BgElevatedBrush}"
+                        Height="20" VerticalAlignment="Center" Padding="5,0" Margin="0,0,6,0">
                     <ComboBox x:Name="ProfileSelector" Style="{StaticResource ProfileComboBox}"
-                              MinWidth="90" MaxWidth="140"
+                              MinWidth="80" MaxWidth="120"
                               SelectionChanged="ProfileSelector_SelectionChanged"/>
                 </Border>
 
                 <TextBlock x:Name="WindowTitle" Grid.Column="2" Text=""
                            Foreground="{StaticResource TextMutedBrush}"
-                           FontSize="11" VerticalAlignment="Center"
+                           FontSize="10" VerticalAlignment="Center"
                            HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
 
-                <StackPanel Grid.Column="3" Orientation="Horizontal">
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="0,0,2,0">
                     <Button x:Name="MinimizeBtn" Style="{StaticResource WindowControlButton}" Click="MinimizeBtn_Click">
                         <Path Data="M0,0 L10,0" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               StrokeThickness="1.2" StrokeEndLineCap="Flat" Width="10" Height="10" Stretch="None"/>
@@ -76,10 +74,10 @@
             </Grid>
 
             <!-- ════════════════════════════════════════════
-                 Tab Bar - floating pill tabs
+                 Tab Strip - connected to title bar, Edge-like
                  ════════════════════════════════════════════ -->
             <Border Grid.Row="1" Background="{StaticResource BgSurfaceBrush}"
-                    BorderThickness="0,0,0,1" BorderBrush="{StaticResource BorderSubtleBrush}">
+                    BorderThickness="0">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -87,14 +85,14 @@
                     </Grid.ColumnDefinitions>
 
                     <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Hidden" Margin="4,0" Height="36"
+                                  VerticalScrollBarVisibility="Hidden" Height="34"
                                   Style="{StaticResource ModernScrollViewer}">
-                        <StackPanel x:Name="TabPanel" Orientation="Horizontal" Height="34"
-                                    Margin="2,2,0,0"/>
+                        <StackPanel x:Name="TabPanel" Orientation="Horizontal" Height="32"
+                                    Margin="4,2,0,0"/>
                     </ScrollViewer>
 
                     <Button x:Name="AddTabBtn" Grid.Column="1" Style="{StaticResource ToolbarButton}"
-                            Width="28" Height="28" Margin="0,0,6,0" Click="AddTab_Click"
+                            Width="26" Height="26" Margin="0,0,4,0" Click="AddTab_Click"
                             ToolTip="New Tab (Ctrl+T)">
                         <Path Data="M4,10 L16,10 M10,4 L10,16"
                               Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
@@ -104,10 +102,14 @@
                 </Grid>
             </Border>
 
+            <!-- Tab strip separator -->
+            <Rectangle Grid.Row="1" Height="1" VerticalAlignment="Bottom"
+                       Fill="{StaticResource BorderSubtleBrush}" Margin="0"/>
+
             <!-- ════════════════════════════════════════════
-                 Navigation Bar - glass-morphism
+                 Navigation Bar - refined, compact
                  ════════════════════════════════════════════ -->
-            <Border Grid.Row="2" Background="{StaticResource BgSurfaceBrush}" Padding="6,0">
+            <Border Grid.Row="2" Background="{StaticResource BgSurfaceBrush}" Padding="4,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -124,14 +126,14 @@
                             Click="BackBtn_Click" ToolTip="Back (Alt+Left)" IsEnabled="False">
                         <Path Data="M12,4 L5,12 L12,20" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               StrokeThickness="2" StrokeEndLineCap="Round" StrokeStartLineCap="Round"
-                              Width="16" Height="16" Stretch="None"/>
+                              Width="15" Height="15" Stretch="None"/>
                     </Button>
 
                     <Button x:Name="ForwardBtn" Grid.Column="1" Style="{StaticResource ToolbarButton}"
                             Click="ForwardBtn_Click" ToolTip="Forward (Alt+Right)" IsEnabled="False">
                         <Path Data="M5,4 L12,12 L5,20" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               StrokeThickness="2" StrokeEndLineCap="Round" StrokeStartLineCap="Round"
-                              Width="16" Height="16" Stretch="None"/>
+                              Width="15" Height="15" Stretch="None"/>
                     </Button>
 
                     <Button x:Name="RefreshBtn" Grid.Column="2" Style="{StaticResource ToolbarButton}"
@@ -139,7 +141,7 @@
                         <Path x:Name="RefreshIcon" Data="M12,3 C7,3 3,7 3,12 C3,17 7,21 12,21 C16,21 19,18 20,14 L18,14 C17,17 15,19 12,19 C8,19 5,16 5,12 C5,8 8,5 12,5 C14,5 15.5,5.8 16.7,7 L13,10.5 L20,10.5 L20,3.5 L17.6,5.9 C15.9,4.1 14,3 12,3 Z"
                               Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               StrokeThickness="1" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                              Width="16" Height="16" Stretch="None"/>
+                              Width="15" Height="15" Stretch="None"/>
                     </Button>
 
                     <Button x:Name="HomeBtn" Grid.Column="3" Style="{StaticResource ToolbarButton}"
@@ -148,12 +150,12 @@
                               Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               StrokeThickness="1.5" StrokeEndLineCap="Round" StrokeStartLineCap="Round" StrokeLineJoin="Round"
                               Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                              Width="16" Height="16" Stretch="None"/>
+                              Width="15" Height="15" Stretch="None"/>
                     </Button>
 
                     <!-- URL bar -->
                     <Border Grid.Column="4" Margin="4,0" CornerRadius="10"
-                            Background="{StaticResource BgElevatedBrush}" Height="32">
+                            Background="{StaticResource BgElevatedBrush}" Height="30">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -163,24 +165,24 @@
 
                             <TextBox x:Name="UrlBox" Grid.Column="0"
                                      Style="{StaticResource UrlTextBox}"
-                                     VerticalAlignment="Center" Height="30"
+                                     VerticalAlignment="Center" Height="28"
                                      KeyDown="UrlBox_KeyDown"
                                      GotFocus="UrlBox_GotFocus"
                                      LostFocus="UrlBox_LostFocus"
                                      IsTabStop="True"/>
 
-                            <Border x:Name="SecurityBadge" Grid.Column="1" Height="18" Width="18"
-                                    Margin="0,0,2,0" VerticalAlignment="Center"
-                                    CornerRadius="4" Background="Transparent"
+                            <Border x:Name="SecurityBadge" Grid.Column="1" Height="16" Width="16"
+                                    Margin="0,0,1,0" VerticalAlignment="Center"
+                                    CornerRadius="3" Background="Transparent"
                                     ToolTip="Connection">
-                                <TextBlock x:Name="SecurityIcon" Text="&#x1F310;" FontSize="10"
+                                <TextBlock x:Name="SecurityIcon" Text="&#x1F310;" FontSize="9"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
 
                             <Button x:Name="BookmarkBtn" Grid.Column="2" Style="{StaticResource ToolbarButton}"
-                                    Width="28" Height="28" Click="BookmarkBtn_Click"
+                                    Width="26" Height="26" Click="BookmarkBtn_Click"
                                     ToolTip="Bookmark">
-                                <TextBlock x:Name="BookmarkIcon" Text="&#x2606;" FontSize="14"
+                                <TextBlock x:Name="BookmarkIcon" Text="&#x2606;" FontSize="13"
                                            Foreground="{StaticResource TextMutedBrush}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Button>
@@ -189,9 +191,9 @@
 
                     <!-- Menu -->
                     <Button x:Name="MenuBtn" Grid.Column="5" Style="{StaticResource ToolbarButton}"
-                            Width="32" Height="32" Margin="2,0" Click="MenuBtn_Click"
+                            Width="30" Height="30" Margin="1,0" Click="MenuBtn_Click"
                             ToolTip="Menu">
-                        <Grid Width="16" Height="16">
+                        <Grid Width="15" Height="15">
                             <Ellipse Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                      Width="3" Height="3" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,2,0,0"/>
                             <Ellipse Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
@@ -235,7 +237,7 @@
                     Visibility="Collapsed" MaxHeight="150">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="28"/>
+                        <RowDefinition Height="26"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0" Margin="8,0">
@@ -244,18 +246,18 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Downloads" FontSize="11" FontWeight="SemiBold"
+                        <TextBlock Text="Downloads" FontSize="10" FontWeight="SemiBold"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    VerticalAlignment="Center"/>
                         <Button x:Name="ClearDownloadsBtn" Grid.Column="1"
                                 Style="{StaticResource ToolbarButton}"
-                                Width="Auto" Height="22" Padding="6,0"
-                                FontSize="10" Click="ClearDownloads_Click"
+                                Width="Auto" Height="20" Padding="6,0"
+                                FontSize="9" Click="ClearDownloads_Click"
                                 ToolTip="Clear completed downloads"
                                 Foreground="{StaticResource TextMutedBrush}">Clear</Button>
                         <Button x:Name="CloseDownloadsBtn" Grid.Column="2"
                                 Style="{StaticResource ToolbarButton}"
-                                Width="22" Height="22" Click="CloseDownloads_Click"
+                                Width="20" Height="20" Click="CloseDownloads_Click"
                                 ToolTip="Close downloads bar">
                             <Path Data="M3,3 L9,9 M9,3 L3,9"
                                   Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
@@ -276,7 +278,7 @@
                  ════════════════════════════════════════════ -->
             <Border x:Name="FindBar" Grid.Row="5" Background="{StaticResource BgSurfaceBrush}"
                     BorderThickness="0,1,0,0" BorderBrush="{StaticResource BorderSubtleBrush}"
-                    Height="36" Visibility="Collapsed">
+                    Height="34" Visibility="Collapsed">
                 <Grid Margin="8,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -287,34 +289,34 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0" Text="Find:" FontSize="12"
+                    <TextBlock Grid.Column="0" Text="Find:" FontSize="11"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                VerticalAlignment="Center" Margin="0,0,6,0"/>
 
-                    <TextBox x:Name="FindBox" Grid.Column="1" Height="24"
+                    <TextBox x:Name="FindBox" Grid.Column="1" Height="22"
                              Background="{StaticResource BgElevatedBrush}"
                              Foreground="{StaticResource TextPrimaryBrush}"
-                             BorderThickness="0" Padding="8,0" FontSize="12"
+                             BorderThickness="0" Padding="8,0" FontSize="11"
                              KeyDown="FindBox_KeyDown"/>
 
                     <TextBlock x:Name="FindResultText" Grid.Column="2"
                                Foreground="{StaticResource TextMutedBrush}"
-                               FontSize="11" VerticalAlignment="Center" Margin="6,0"/>
+                               FontSize="10" VerticalAlignment="Center" Margin="6,0"/>
 
                     <Button x:Name="FindPrevBtn" Grid.Column="3" Style="{StaticResource ToolbarButton}"
-                            Width="28" Height="28" Click="FindPrev_Click" ToolTip="Previous">
+                            Width="26" Height="26" Click="FindPrev_Click" ToolTip="Previous">
                         <Path Data="M8,4 L4,10 L8,16" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               StrokeThickness="2" StrokeEndLineCap="Round" Width="12" Height="12" Stretch="None"/>
                     </Button>
 
                     <Button x:Name="FindNextBtn" Grid.Column="4" Style="{StaticResource ToolbarButton}"
-                            Width="28" Height="28" Click="FindNext_Click" ToolTip="Next">
+                            Width="26" Height="26" Click="FindNext_Click" ToolTip="Next">
                         <Path Data="M4,4 L8,10 L4,16" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               StrokeThickness="2" StrokeEndLineCap="Round" Width="12" Height="12" Stretch="None"/>
                     </Button>
 
                     <Button x:Name="FindCloseBtn" Grid.Column="5" Style="{StaticResource ToolbarButton}"
-                            Width="24" Height="24" HorizontalAlignment="Right" Click="FindClose_Click" ToolTip="Close (Esc)">
+                            Width="22" Height="22" HorizontalAlignment="Right" Click="FindClose_Click" ToolTip="Close (Esc)">
                         <Path Data="M3,3 L9,9 M9,3 L3,9" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               StrokeThickness="1.5" StrokeEndLineCap="Flat" Width="12" Height="12" Stretch="None"/>
                     </Button>
@@ -322,11 +324,11 @@
             </Border>
 
             <!-- ════════════════════════════════════════════
-                 Status Bar - minimal
+                 Status Bar - compact, refined
                  ════════════════════════════════════════════ -->
             <Border Grid.Row="6" Background="{StaticResource BgSurfaceBrush}"
                     BorderThickness="0,1,0,0" BorderBrush="{StaticResource BorderSubtleBrush}">
-                <Grid Margin="8,0">
+                <Grid Margin="6,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -336,22 +338,22 @@
 
                     <TextBlock x:Name="StatusText" Grid.Column="0"
                                Foreground="{StaticResource TextMutedBrush}"
-                               FontSize="10" VerticalAlignment="Center"
+                               FontSize="9" VerticalAlignment="Center"
                                Text="Ready" TextTrimming="CharacterEllipsis"/>
 
                     <ProgressBar x:Name="LoadProgress" Grid.Column="2"
                                  Style="{StaticResource ModernProgressBar}"
-                                 Width="80" Minimum="0" Maximum="100" Value="0"
+                                 Width="60" Minimum="0" Maximum="100" Value="0"
                                  VerticalAlignment="Center" Margin="4,0"
                                  Visibility="Collapsed"/>
 
                     <TextBlock x:Name="ZoomText" Grid.Column="3" Text="100%"
                                Foreground="{StaticResource TextMutedBrush}"
-                               FontSize="10" VerticalAlignment="Center"
-                               Margin="8,0,0,0" ToolTip="Zoom level"/>
+                               FontSize="9" VerticalAlignment="Center"
+                               Margin="6,0,0,0" ToolTip="Zoom level"/>
                     <TextBlock Grid.Column="4" Text="&#x2921;"
                                Foreground="{StaticResource TextMutedBrush}"
-                               FontSize="11" VerticalAlignment="Center"
+                               FontSize="10" VerticalAlignment="Center"
                                Margin="4,0,2,0" ToolTip="Drag to resize"/>
                 </Grid>
             </Border>

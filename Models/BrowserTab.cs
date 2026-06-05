@@ -13,4 +13,6 @@ public class BrowserTab
     public Button? Button { get; set; }
     public TextBlock? TitleControl { get; set; }
     public bool IsLoading { get; set; }
+    public System.Windows.Controls.Image? FaviconImage { get; set; }
+    public Button? CloseButton { get; set; }
 }

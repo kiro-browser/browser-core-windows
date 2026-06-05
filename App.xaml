@@ -20,6 +20,7 @@
             <Color x:Key="Success">#22c55e</Color>
             <Color x:Key="BorderSubtle">#1e1e3a</Color>
             <Color x:Key="BorderStrong">#2e2e52</Color>
+            <Color x:Key="TabAccent">#7c5fff</Color>
 
             <!-- ═══ Brushes ═══ -->
             <SolidColorBrush x:Key="BgBaseBrush" Color="{StaticResource BgBase}"/>
@@ -37,12 +38,26 @@
             <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource Success}"/>
             <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtle}"/>
             <SolidColorBrush x:Key="BorderStrongBrush" Color="{StaticResource BorderStrong}"/>
+            <SolidColorBrush x:Key="TabAccentBrush" Color="{StaticResource TabAccent}"/>
+
+            <!-- ═══ Gradient Brushes ═══ -->
+            <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Color="#6366f1" Offset="0"/>
+                <GradientStop Color="#818cf8" Offset="1"/>
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="TopBarGradient" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#181830" Offset="0"/>
+                <GradientStop Color="#141428" Offset="1"/>
+            </LinearGradientBrush>
 
             <!-- ═══ Effects ═══ -->
-            <DropShadowEffect x:Key="TabShadow" Color="#000" Opacity="0.3" BlurRadius="12" ShadowDepth="2"/>
-            <DropShadowEffect x:Key="NavShadow" Color="#000" Opacity="0.4" BlurRadius="20" ShadowDepth="4"/>
+            <DropShadowEffect x:Key="TabShadow" Color="#000" Opacity="0.4" BlurRadius="12" ShadowDepth="3"/>
+            <DropShadowEffect x:Key="NavShadow" Color="#000" Opacity="0.5" BlurRadius="24" ShadowDepth="6"/>
+            <DropShadowEffect x:Key="ElevatedShadow" Color="#000" Opacity="0.3" BlurRadius="16" ShadowDepth="4"/>
+            <DropShadowEffect x:Key="UrbBarShadow" Color="#6366f1" Opacity="0.15" BlurRadius="12" ShadowDepth="0"/>
 
-            <!-- ═══ Toolbar Button (rounded, minimal) ═══ -->
+            <!-- ═══ Toolbar Button (refined) ═══ -->
             <Style x:Key="ToolbarButton" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
@@ -50,12 +65,15 @@
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Height" Value="32"/>
                 <Setter Property="Width" Value="32"/>
+                <Setter Property="RenderOptions.EdgeMode" Value="Aliased"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="border" Background="{TemplateBinding Background}"
-                                    CornerRadius="8" Padding="5" Opacity="0.85">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    CornerRadius="7" Padding="5" Opacity="0.85"
+                                    RenderOptions.EdgeMode="Aliased">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  RenderOptions.EdgeMode="Aliased"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
@@ -68,7 +86,7 @@
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
-                                    <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                                    <Setter TargetName="border" Property="Opacity" Value="0.3"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -76,25 +94,27 @@
                 </Setter>
             </Style>
 
-            <!-- ═══ Window Controls ═══ -->
+            <!-- ═══ Window Controls (Windows 11 style) ═══ -->
             <Style x:Key="WindowControlButton" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Width" Value="42"/>
-                <Setter Property="Height" Value="32"/>
+                <Setter Property="Width" Value="40"/>
+                <Setter Property="Height" Value="28"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="border" Background="{TemplateBinding Background}">
+                            <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6"
+                                    Margin="3,2">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#ffffff15"/>
+                                    <Setter TargetName="border" Property="Background" Value="#ffffff18"/>
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
                                     <Setter Property="Foreground" Value="White"/>
+                                    <Setter TargetName="border" Property="Background" Value="#ffffff30"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -108,24 +128,37 @@
                         <Setter Property="Background" Value="#e81123"/>
                         <Setter Property="Foreground" Value="White"/>
                     </Trigger>
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter Property="Background" Value="#f1707a"/>
+                        <Setter Property="Foreground" Value="White"/>
+                    </Trigger>
                 </Style.Triggers>
             </Style>
 
-            <!-- ═══ Modern URL Bar ═══ -->
+            <!-- ═══ Modern URL Bar (with glass effect) ═══ -->
             <Style x:Key="UrlTextBox" TargetType="TextBox">
                 <Setter Property="Background" Value="{StaticResource BgElevatedBrush}"/>
                 <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Padding" Value="14,0,8,0"/>
-                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="Padding" Value="36,0,30,0"/>
+                <Setter Property="FontSize" Value="12.5"/>
                 <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="TextBox">
                             <Border x:Name="border" Background="{TemplateBinding Background}"
                                     CornerRadius="10" BorderThickness="1.5"
-                                    BorderBrush="{StaticResource BorderSubtleBrush}">
-                                <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                                    Effect="{StaticResource ElevatedShadow}">
+                                <Grid>
+                                    <!-- Lock/Search icon -->
+                                    <TextBlock x:Name="UrlIcon" Text="&#x1F310;"
+                                               FontSize="11" VerticalAlignment="Center"
+                                               HorizontalAlignment="Left" Margin="12,0,0,0"
+                                               Foreground="{StaticResource TextMutedBrush}"/>
+                                    <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"
+                                                  Margin="0,0,0,0"/>
+                                </Grid>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="FocusStates">
                                         <VisualState x:Name="Focused">
@@ -133,7 +166,25 @@
                                                 <ObjectAnimationUsingKeyFrames Storyboard.TargetName="border"
                                                     Storyboard.TargetProperty="BorderBrush">
                                                     <DiscreteObjectKeyFrame KeyTime="0"
-                                                        Value="{StaticResource AccentBrush}"/>
+                                                        Value="{StaticResource AccentSoftBrush}"/>
+                                                </ObjectAnimationUsingKeyFrames>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="border"
+                                                    Storyboard.TargetProperty="Effect">
+                                                    <DiscreteObjectKeyFrame KeyTime="0">
+                                                        <DiscreteObjectKeyFrame.Value>
+                                                            <DropShadowEffect Color="#818cf8" Opacity="0.25"
+                                                                              BlurRadius="16" ShadowDepth="0"/>
+                                                        </DiscreteObjectKeyFrame.Value>
+                                                    </DiscreteObjectKeyFrame>
+                                                </ObjectAnimationUsingKeyFrames>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="UrlIcon"
+                                                    Storyboard.TargetProperty="Text">
+                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="&#x1F50D;"/>
+                                                </ObjectAnimationUsingKeyFrames>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="UrlIcon"
+                                                    Storyboard.TargetProperty="Foreground">
+                                                    <DiscreteObjectKeyFrame KeyTime="0"
+                                                        Value="{StaticResource AccentSoftBrush}"/>
                                                 </ObjectAnimationUsingKeyFrames>
                                             </Storyboard>
                                         </VisualState>
@@ -145,25 +196,27 @@
                 </Setter>
             </Style>
 
-            <!-- ═══ Modern Tab Style ═══ -->
+            <!-- ═══ Browser Tab Style (Edge-like) ═══ -->
             <Style x:Key="BrowserTab" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Height" Value="34"/>
+                <Setter Property="Height" Value="30"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="border" Background="{TemplateBinding Background}"
-                                    CornerRadius="8" Padding="10,0" Margin="1,0"
-                                    BorderThickness="0">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    CornerRadius="8,8,0,0" Padding="8,0" Margin="1,4,1,0"
+                                    BorderThickness="0"
+                                    RenderOptions.EdgeMode="Aliased">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  RenderOptions.EdgeMode="Aliased"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="border" Property="Background" Value="{StaticResource BgElevatedBrush}"/>
-                                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -171,11 +224,11 @@
                 </Setter>
             </Style>
 
-            <!-- ═══ ComboBox (profile selector) - minimal style ═══ -->
+            <!-- ═══ ComboBox (profile selector) ═══ -->
             <Style x:Key="ProfileComboBox" TargetType="ComboBox">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
                 <Setter Property="FontSize" Value="11"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="ItemContainerStyle">
@@ -201,15 +254,15 @@
                     <Setter.Value>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding Icon}" FontSize="13" Margin="0,0,8,0"/>
-                                <TextBlock Text="{Binding Name}" FontSize="12"/>
+                                <TextBlock Text="{Binding Icon}" FontSize="12" Margin="0,0,6,0"/>
+                                <TextBlock Text="{Binding Name}" FontSize="11"/>
                             </StackPanel>
                         </DataTemplate>
                     </Setter.Value>
                 </Setter>
             </Style>
 
-            <!-- ═══ Progress Bar ═══ -->
+            <!-- ═══ Progress Bar (thin, gradient) ═══ -->
             <Style x:Key="ModernProgressBar" TargetType="ProgressBar">
                 <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
                 <Setter Property="Background" Value="{StaticResource BgElevatedBrush}"/>
@@ -229,7 +282,7 @@
                 </Setter>
             </Style>
 
-            <!-- ═══ ScrollViewer Style ═══ -->
+            <!-- ═══ ScrollViewer Style (slim, themed) ═══ -->
             <Style x:Key="ModernScrollViewer" TargetType="ScrollViewer">
                 <Setter Property="Template">
                     <Setter.Value>
@@ -239,16 +292,16 @@
                                 <ScrollBar x:Name="PART_VerticalScrollBar" Value="{TemplateBinding VerticalOffset}"
                                            Maximum="{TemplateBinding ScrollableHeight}" ViewportSize="{TemplateBinding ViewportHeight}"
                                            Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
-                                           Width="8" Margin="0,0,2,0">
+                                           Width="6" Margin="0,0,1,0">
                                     <ScrollBar.Template>
                                         <ControlTemplate TargetType="ScrollBar">
                                             <Track x:Name="PART_Track" IsDirectionReversed="False">
                                                 <Track.Thumb>
-                                                    <Thumb BorderThickness="0" Width="6" Margin="0,2">
+                                                    <Thumb BorderThickness="0" Width="4" Margin="0,2">
                                                         <Thumb.Template>
                                                             <ControlTemplate TargetType="Thumb">
                                                                 <Border Background="{StaticResource BgHoverBrush}"
-                                                                        CornerRadius="3"/>
+                                                                        CornerRadius="2"/>
                                                             </ControlTemplate>
                                                         </Thumb.Template>
                                                     </Thumb>
