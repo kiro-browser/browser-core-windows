@@ -324,7 +324,8 @@ public partial class MainWindow : Window
         UpdateZoomDisplay();
     }
 
-    private void CloseTab(BrowserTab tab)
+    private void CloseTab(BrowserTab tab)   // Takes in the tab to close;
+                                            // from the click event.
     {
         // If only one tab left, close the window.
         if (_tabs.Count <= 1) { Close(); return; }
