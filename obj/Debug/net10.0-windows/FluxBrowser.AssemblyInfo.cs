@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCopyrightAttribute("© 2026 Flux Labs")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("A modern web browser with DuckDuckGo as default search")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0.0+97dfdf919d9ab150463d1317ce7643bc28d8a6ec")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0.0+1e4fb52fd838d21a4a10784bf27f8c6dd767b7fe")]
 [assembly: System.Reflection.AssemblyProductAttribute("Flux Browser")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FluxBrowser")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

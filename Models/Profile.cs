@@ -12,7 +12,7 @@ public class Profile
 
     public string DataDir => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "FluxBrowser", "Profiles", Id);
+        "BuildBrowser", "Profiles", Id);
 
     public string WebView2DataDir => Path.Combine(DataDir, "WebView2");
     public string BookmarksFile => Path.Combine(DataDir, "bookmarks.json");
